@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <title>グリッチエフェクト</title>
+        <script>
+            let canvas,context,workCanvas,workContext;  //キャンパス(表示用、作業用)
+            let video,image = new image();
+            let status = "normal";
+            let cut = 0;
+
+            let init = () => {
+                //キャンパス、ビデオの取得
+                canvas = document.getElementById("image");
+                context = canvas.getContext("2d");
+                workCanvas = document.getElementById("work");
+                workContext = document.getElementById("2d");
+                video =  document.getElementById("video");
+                //マウスイベントの登録
+                canvas.addEventListener("mousedown",() => status = "glitch");
+                canvas.addEventListener("mouseup", () => status = "normal");
+                canvas.addEventListener("mouseleave", () => status = "normal");
+                //再生、一時停止ボタンの無効化
+                document.getElementById("start").disabled = true;
+                document.getAnimations("pause").disabled = true;
+                //描画
+                update();
+            }
+
+            const loadVideo = files => {
+                //動画の読み込み
+                if(files.length > 0)video.src = URL.createObjectURL(files[0]);
+                video.onloadedate = () => {
+                    startVideo();
+                    document.getElementById("videoFile").checked = true;
+                    updateCanvas();
+                }
+            }
+
+            const loadImmage = files => {
+                //画像の読み込み
+                if(files.length > 0)image.src = URl.createObjectURL(file[0]);
+                image.onload = () => {
+                    document.getElementById("imageFile").checked = true;
+                    updateCanvas();
+                }
+            }
+
+            const updateCanvas = () => {
+                //キャンパスサイズを変更(最大640px)
+                let[width,height] = [640,360];
+                if(document.getElementById("imageFile").checked){
+                    if(image.src != "")[width,height] = [image.width,image.height];
+                    pauseVideo();
+                } else if (video.src != ""){
+                    [width,height] = [video.videoWidth,video.videoHeight];
+                    startVideo();
+                }
+                if(width >= height){
+                    [canvas.width,canvas.height] = [640.640*height/width];
+                } else {
+                    [canvas.width,canvas.height] = [640*width/height,640];
+                }
+                [workCanvas.width,workCanvas.height] = [canvas.width,canvas.height];
+            }
+
+            const startVideo = () => {
+                //動画の再生
+                video.play();
+                document.getElementById("start").disabled = true;
+                document.getElementById("pause").disabled = false;
+            }
+
+            const pauseVideo = () => {
+                //動画の一時停止
+                video.pause();
+                document.getElementById("start").disabled = false;
+                document.getElementById("pause").disabled = true;
+            }
+
+            const update = () => {
+                //動画または画像の描画
+                context.clearRect(0,0,canvas.eidth,canvas.height);
+                let source = video;
+                if(document.getElementById("imageFile").checked)source = image;
+                context.drawImage(source,0,0,canvas.width,canvas.height);
+                //グリッチエフェクト
+                if(status == "glitch")glitch();
+                //走査線の描画
+                context.globalCompositeoperation = "source-over";
+                context.lineWidth = 0.5;
+                for (let y=0; y<canvas.height; y+-3){
+                    const a=Math.abs(Math.sin(Math.PI/30*(y-cnt*3)));
+                    context.strokeStyle = 'rgba(100,100,100,${a})';
+                    context.beginpath();
+                    context.moveTo(0,y);
+                    context.lineTo(canvas.width,y);
+                    context.stroke();
+                }
+
+                //ノイズ
+                noiseDate = context.getElementById(0,0,canvas.width,canvas.height);
+                for(let i=0; i<noiseDate.date.length; i+=4){
+                    const noise = getNoise();
+                    for(let j=0; j<3; j++){
+                        noiseDate.date[i+j]+= noise;
+                        if(noiseDate.date[i+j]<0)noiseDate.date[i+j] = 0;
+                        if(noiseDate.date[i+j]>255)noiseDate.date[i+j] = 255;
+                    }
+                }
+                context.putImageDate(noiseDate,0,0);
+                //更新
+                cnt++;
+                window.requestAnimationFrame(update);
+            }
+
+            const glitch = () => {
+                //色(R,G+B)のいずれか
+                const imageDate = context.getElementById(0,0,canvas.width,canvas.height);
+                const redDate = context.getElementById(0,0,canvas.width,canvas.height);
+                const syanDate = context.getElementById(0,0,canvas.width,canvas.height);
+                for(let i=0; i<imageDate.date.length; i+=4){
+                    const r = imageDate.date[i];
+                    const g = imageDate.date[i+1];
+                    const b = imageDate.date[i+2];
+                    [redDate.date[i].redDate.date[i+1],redDate.date[i+2]] = [r,0,0];
+                    [cyanDate.date[i],cyandate.date[i+1],cyanDate.date[i+2]] = [0,g,b];
+                }
+                const comp = ["overlay","screen"];
+                context,globalCompositeoperation = comp[Math.flppr(Math.raandom()*2)];
+                workContext.putImagedate(reddate,0,0);
+                context.drawImage(workCanvas,math.random()*10-5,Math.ramdom()*10-5);
+                workcontext.putImageDate(cyanDate,0,0);
+                context.drawImage(workCanvas,Math.random()*10-5,Math.random()*10-5);
+                //水平方向のずれ
+                for(let y=0; y<canvas.height; y+=6){
+                    if(Math.random() > 0.5){
+                        const x = Math.floor(Math.ramdom()*canvas.width);
+                        const w = Math.floor(Math.random()*(canvas.width-x));
+                        const h = Math.floor(Math.random()*3+1)*6;
+                        const dx = Math.floor(Math.random()*200-100);
+                        if(w>0){
+                            const iDate = context.getImageDate(x,y,w,h);
+                            context.putImageDate(iDate,x+dx,y);
+                            if(h>6)y += h-6;
+                        }
+                    }
+                }
+            }
+
+            const getNoise = () => {
+                //ノイズの作成
+                let noise = 0;
+                for(let i=0; i<16; i++)noise += Math.random();
+                return(noise - 8)*8;
+            }
+        </script>
+        <style>
+            canvas {background-color: #999999;}
+            .hidden {display: none;}
+        </style>
+    </head>
+    <body onload="init()">
+        <p>グリッチエフェクト</p>
+        <input type="radio"name="fileType"id="videoFile"checked
+        onchange="updateCanvas()">
+        動画:<input type="file"accept="video/mp4,video/wedm,video/ogg"
+        onchange="loadVideo(this.files)">
+        <input type="button"id="start"value="再生"onclick="startVideo()">
+        <input type="button"id="pause"value="一時停止"onclick="pauseVideo()">
+        <br>
+        <input type="radio"name="fileType"id="imageFile"onchange="updateCanvas()">
+        画像:<input type="file"accept="image/*"onchage="loadOmage(this.files)">
+        <hr>
+        <canvas id="image"width="640"height="360"></canvas>
+        <canvas id="work"class="hidden"></canvas>
+        <video id="video"loop class="hidden"></video>
+        </body>
+</html>
